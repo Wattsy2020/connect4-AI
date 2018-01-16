@@ -1,9 +1,3 @@
-#Software Development Plan
-#1. Improve efficiency
-    #Use pruning in decideNextMove
-    #see if efficiency of genPositions and genNextMoves can be improved
-#2. Create a user interface
-
 def printPosition(position):
     for i in range(6):
         rowString = ""
