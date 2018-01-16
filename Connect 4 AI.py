@@ -1,11 +1,3 @@
-#How it works:
-#1. Generate all possible positions a number of moves from now
-#2. Analyse positions to determine which ones are lost
-#i. use pruning to discard moves that have a high loss rate
-#3. Choose the move that results in the least lost positions
-
-#Game information: Red and Blue checkers 6 rows and 7 columns 0 = red checker 1 = blue checker
-
 #Software Development Plan
 #1. Improve efficiency
     #Use pruning in decideNextMove
@@ -121,7 +113,7 @@ def analysePosition(position):
         if diagonal.count(0) > 3:
             if connected(diagonal, 0): return 0
         elif diagonal.count(1) > 3:
-            if connected(diagonal, 1): return 1                                 
+            if connected(diagonal, 1): return 1
     for s in range(1,4):
         if (7-s) - (6 - fullRows) < 4: break
         diagonal = []
@@ -129,7 +121,7 @@ def analysePosition(position):
         if diagonal.count(0) > 3:
             if connected(diagonal, 0): return 0
         elif diagonal.count(1) > 3:
-            if connected(diagonal, 1): return 1                         
+            if connected(diagonal, 1): return 1
     return 2
 
 def connected(line, colour):
