@@ -1,4 +1,5 @@
 def printPosition(position):
+    #Formats the position to look nicer and then prints it
     for i in range(6):
         rowString = ""
         for j in range(7):
@@ -7,7 +8,7 @@ def printPosition(position):
         print(rowString)
     print()
 
-def decideNextMove(position, colour, depth = 4):
+def decideNextMove(position, colour, depth = 6):
     #Improvement ideas: alpha-beta pruning, only use even numbered depths, you can't lose on your move
     #1. call genNextMoves on position
     #2. for each move generated call genPositions
@@ -31,15 +32,14 @@ def decideNextMove(position, colour, depth = 4):
 
 def genPositions(position, colour, depth = 6):
     #Repeatedly call genNextMoves until we reach the depth, then return the positions to decideNextMove which analyses the positions using analysePosition
-    #Note we don't have to account for games won before they reach the full depth, genNextMoves will simply
-    #generate 'dummy' positions that decideNextMove will recognise as a win
-    #Optimise
+    #Note we don't have to account for games won before they reach the full depth, genNextMoves will simply -
+    #- generate 'dummy' positions that decideNextMove will recognise as a win
     positions = [position]
     for i in range(depth):
         if i > 0:
             positions.append(genNextMoves(positions[i][0], colour))
-            for k in range(1, 7**i):
-                positions[i+1].extend(genNextMoves(positions[i][k], colour)) #extend probably isn't being used correctly
+            for k in range(1, len(positions[i])):
+                positions[i+1].extend(genNextMoves(positions[i][k], colour))
         else: positions.append(genNextMoves(positions[i], colour))
         if colour == 1: colour = 0
         else: colour = 1
@@ -47,18 +47,21 @@ def genPositions(position, colour, depth = 6):
 
 def genNextMoves(position, colour):
     #returns an array of the positions possible in the next move
-    #Optimise
     positions = [0,0,0,0,0,0,0]
     for i in range(7):
-        if position[0][i]:
+        if position[0][i]:#check if top row is full
             positions[i] = False
-            continue #check if top row is full
-        positions[i] = [position[0][:], position[1][:], position[2][:], position[3][:], position[4][:], position[5][:]] #Needed because array assignment in python is bs
+            continue
+        positions[i] = [position[0][:], position[1][:], position[2][:], position[3][:], position[4][:], position[5][:]] #Needed because array assignment in python is weird
         for k in range(5,0,-1): #put checker in lowest row possible
-            if positions[i][k][i] == 0 or positions[i][k][i] == 1: continue
-            positions[i][k][i] = colour
-            break
-    return positions
+            if positions[i][k][i] == '':
+                positions[i][k][i] = colour
+                break
+    #remove illegal positions that result when top row is full
+    correctPositions = []
+    for j in range(len(positions)):
+        if positions[j]: correctPositions.append(positions[j])
+    return correctPositions
 
 def analysePosition(position):
     #take in a multidimensional array of a position and determine whether it is won for either side 0 = won for Red 1 = won for Blue 2 = even
