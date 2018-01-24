@@ -26,8 +26,7 @@ def decideNextMove(position, colour, depth = 6):
             result = analysePosition(positions[k])
             if result == lossColour: losses = losses + 1
             else: other = other + 1
-        if other == 0: moveLossRate.append(1)
-        else: moveLossRate.append(losses/(losses + other))
+        moveLossRate.append(losses/(losses + other))
     return moveLossRate
 
 def genPositions(position, colour, depth = 6):
@@ -47,21 +46,13 @@ def genPositions(position, colour, depth = 6):
 
 def genNextMoves(position, colour):
     #returns an array of the positions possible in the next move
-    positions = [0,0,0,0,0,0,0]
+    positions = []
     for i in range(7):
-        if position[0][i]:#check if top row is full
-            positions[i] = False
-            continue
-        positions[i] = [position[0][:], position[1][:], position[2][:], position[3][:], position[4][:], position[5][:]] #Needed because array assignment in python is weird
-        for k in range(5,0,-1): #put checker in lowest row possible
-            if positions[i][k][i] == '':
-                positions[i][k][i] = colour
-                break
-    #remove illegal positions that result when top row is full
-    correctPositions = []
-    for j in range(len(positions)):
-        if positions[j]: correctPositions.append(positions[j])
-    return correctPositions
+        if position[0][i]: continue#check if top row is full
+        positions.append([position[0][:], position[1][:], position[2][:], position[3][:], position[4][:], position[5][:]]) #Needed because array assignment in python is weird
+        emptySpaces = [position[1][i], position[2][i], position[3][i], position[4][i], position[5][i]].count('')
+        positions[-1][emptySpaces][i] = colour
+    return positions
 
 def analysePosition(position):
     #take in a multidimensional array of a position and determine whether it is won for either side 0 = won for Red 1 = won for Blue 2 = even
