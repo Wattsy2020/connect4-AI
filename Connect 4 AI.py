@@ -1,12 +1,38 @@
+def updateColour(colour):
+    if colour == 1: return 0
+    return 1
+
 def printPosition(position):
-    #Formats the position to look nicer and then prints it
     for i in range(6):
         rowString = ""
         for j in range(7):
             if position[i][j] != '': rowString = rowString + '[' + str(position[i][j]) + ']'
             else: rowString = rowString + "[ ]"
         print(rowString)
+    print(" 0  1  2  3  4  5  6")
     print()
+
+def getUserMove(position, colour):
+    printPosition(position)
+    while True:
+        move = input("Enter your move: ")
+        try:
+            move = int(move)
+            if move > 6:
+                print("Please enter a valid column number between 0-6")
+                continue
+            break
+        except:
+            print("Please enter a valid column number between 0-6")
+    return updatePosition(position, move, colour)
+
+def updatePosition(position, move, colour):
+    #Takes in a position and adds a checker in the 'move' column
+    for i in range(5, -1, -1):
+        if position[i][move] == '':
+            position[i][move] = colour
+            break
+    return position
 
 def decideNextMove(position, colour, depth = 6):
     #Improvement ideas: alpha-beta pruning, only use even numbered depths, you can't lose on your move
@@ -27,7 +53,7 @@ def decideNextMove(position, colour, depth = 6):
             if result == lossColour: losses = losses + 1
             else: other = other + 1
         moveLossRate.append(losses/(losses + other))
-    return moveLossRate
+    return moveLossRate.index(min(moveLossRate))
 
 def genPositions(position, colour, depth = 6):
     #Repeatedly call genNextMoves until we reach the depth, then return the positions to decideNextMove which analyses the positions using analysePosition
@@ -101,7 +127,7 @@ def analysePosition(position):
         if diagonal.count(0) > 3:
             if connected(diagonal, 0): return 0
         elif diagonal.count(1) > 3:
-            if connected(diagonal, 1): return 1
+            if connected(diagonal, 1): return 1                                 
     for s in range(1,4):
         if (7-s) - (6 - fullRows) < 4: break
         diagonal = []
@@ -109,7 +135,7 @@ def analysePosition(position):
         if diagonal.count(0) > 3:
             if connected(diagonal, 0): return 0
         elif diagonal.count(1) > 3:
-            if connected(diagonal, 1): return 1
+            if connected(diagonal, 1): return 1                         
     return 2
 
 def connected(line, colour):
@@ -129,8 +155,8 @@ def connected(line, colour):
     return False
 
 
-samplePosition = [['','','','','','',''],
-                  ['','','','','','',''],
+samplePosition = [[1 ,'','','','','',''],
+                  [0 ,'','','','','',''],
                   [1 ,1 ,'','','',1 ,1 ],
                   [0 ,0 ,1 ,'','',1 ,1 ],
                   [0 ,1 ,1 ,1 ,0 ,0 ,0 ],
@@ -142,3 +168,24 @@ startPosition = [['','','','','','',''],
                 ['','','','','','',''],
                 ['','','','','','',''],
                 ['','','','','','','']]
+
+
+#error in decideNextMove, can decide to make a move in a full column
+
+def mainLine(position):
+    print("Welcome to connect 4! Input your moves by entering the column number you wish to place a checker in, columns are numbered 0 to 6 left to right")
+    colour = 1
+    while position[0].count('') != 0: #while game is not over
+        position = getUserMove(position, colour)
+        #check if game won
+        if analysePosition(position) == colour:
+            print("--------You win!--------")
+            return
+        colour = updateColour(colour)
+        move = decideNextMove(position, colour, 6)
+        position = updatePosition(position, move, colour)
+        #check if game won
+        if analysePosition(position) == colour:
+            print("--------You lose :(--------")
+            return
+        colour = updateColour(colour)
