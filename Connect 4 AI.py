@@ -1,16 +1,25 @@
+from colorama import init, Fore, Style, Back
+init()
+
 def updateColour(colour):
     if colour == 1: return 0
     return 1
 
 def printPosition(position):
+    print(Back.WHITE, end = '')
     for i in range(6):
-        rowString = ""
         for j in range(7):
-            if position[i][j] != '': rowString = rowString + '[' + str(position[i][j]) + ']'
-            else: rowString = rowString + "[ ]"
-        print(rowString)
-    print(" 0  1  2  3  4  5  6")
-    print()
+            if position[i][j] == '': print(Fore.BLACK + "[ ]", end = '')
+            else:
+                print(Fore.BLACK + "[", end = '')
+                if position[i][j] == 1:
+                    print(Fore.RED +'O', end = '')
+                else:
+                    print(Fore.BLUE + 'O', end = '')
+                print(Fore.BLACK + "]", end = '')
+        print()
+    print(Fore.BLACK + " 0  1  2  3  4  5  6 ")
+    print(Style.RESET_ALL, end = '')
 
 def getUserMove(position, colour):
     printPosition(position)
@@ -53,6 +62,7 @@ def decideNextMove(position, colour, depth = 6):
             if result == lossColour: losses = losses + 1
             else: other = other + 1
         moveLossRate.append(losses/(losses + other))
+    print(moveLossRate)
     return moveLossRate.index(min(moveLossRate))
 
 def genPositions(position, colour, depth = 6):
@@ -169,14 +179,16 @@ startPosition = [['','','','','','',''],
                 ['','','','','','',''],
                 ['','','','','','','']]
 
-
 #error in decideNextMove, can decide to make a move in a full column
+#happens because decide next move still analyses the winrate of placing a checker
+#in a full column. Indicates there is a much deeper error in the algorithm logic
 
 def mainLine(position):
     print("Welcome to connect 4! Input your moves by entering the column number you wish to place a checker in, columns are numbered 0 to 6 left to right")
     colour = 1
     while position[0].count('') != 0: #while game is not over
         position = getUserMove(position, colour)
+        printPosition(position)
         #check if game won
         if analysePosition(position) == colour:
             print("--------You win!--------")
@@ -189,3 +201,7 @@ def mainLine(position):
             print("--------You lose :(--------")
             return
         colour = updateColour(colour)
+
+
+mainLine(startPosition)
+n = input("Press enter to quit")
