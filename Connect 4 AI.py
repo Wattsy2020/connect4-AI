@@ -22,6 +22,7 @@ def printPosition(position):
     print(Style.RESET_ALL, end = '')
 
 def getUserMove(position, colour):
+    #Full input error checking
     printPosition(position)
     while True:
         move = input("Enter your move: ")
@@ -30,6 +31,9 @@ def getUserMove(position, colour):
             if move > 6:
                 print("Please enter a valid column number between 0-6")
                 continue
+            if position[0][move] != '':
+                print("Column is full, Please enter a valid column number")
+                continue
             break
         except:
             print("Please enter a valid column number between 0-6")
@@ -37,10 +41,8 @@ def getUserMove(position, colour):
 
 def updatePosition(position, move, colour):
     #Takes in a position and adds a checker in the 'move' column
-    for i in range(5, -1, -1):
-        if position[i][move] == '':
-            position[i][move] = colour
-            break
+    emptySpaces = [position[1][move], position[2][move], position[3][move], position[4][move], position[5][move]].count('')
+    position[emptySpaces][move] = colour
     return position
 
 def decideNextMove(position, colour, depth = 6):
@@ -67,27 +69,28 @@ def decideNextMove(position, colour, depth = 6):
 
 def genPositions(position, colour, depth = 6):
     #Repeatedly call genNextMoves until we reach the depth, then return the positions to decideNextMove which analyses the positions using analysePosition
-    #Note we don't have to account for games won before they reach the full depth, genNextMoves will simply -
-    #- generate 'dummy' positions that decideNextMove will recognise as a win
+
+    #Setup positions array
     positions = [position]
-    for i in range(depth):
-        if i > 0:
-            positions.append(genNextMoves(positions[i][0], colour))
-            for k in range(1, len(positions[i])):
-                positions[i+1].extend(genNextMoves(positions[i][k], colour))
-        else: positions.append(genNextMoves(positions[i], colour))
-        if colour == 1: colour = 0
-        else: colour = 1
+    positions.append(genNextMoves(positions[0], colour))
+    
+    #Loop through and add positions as the next element in array (array looks like this [positions of depth1, positions of depth2, positions of depth3...])
+    for i in range(1, depth):
+        positions.append(genNextMoves(positions[i][0], colour))
+        for k in range(1, len(positions[i])):
+            positions[i+1].extend(genNextMoves(positions[i][k], colour, k))
+        colour = updateColour(colour)
     return positions[depth]
 
-def genNextMoves(position, colour):
+def genNextMoves(position, colour, completedColumns = 0):
     #returns an array of the positions possible in the next move
+    #completedColumns avoids creating duplicate positions i.e. adding a checker in c1 then c2 is the same as c2 then c1
     positions = []
-    for i in range(7):
-        if position[0][i]: continue#check if top row is full
-        positions.append([position[0][:], position[1][:], position[2][:], position[3][:], position[4][:], position[5][:]]) #Needed because array assignment in python is weird
-        emptySpaces = [position[1][i], position[2][i], position[3][i], position[4][i], position[5][i]].count('')
-        positions[-1][emptySpaces][i] = colour
+    for i in range(completedColumns, 7):
+        if position[0][i]: continue #check if top row is full
+        
+        positions.append([position[0][:], position[1][:], position[2][:], position[3][:], position[4][:], position[5][:]]) #Append a copy of position that is not linked to position
+        positions[-1] = updatePosition(positions[-1], i, colour) #add a checker in column i
     return positions
 
 def analysePosition(position):
@@ -100,6 +103,7 @@ def analysePosition(position):
             if connected(position[j], 0): return 0
         elif position[j].count(1) > 3:
             if connected(position[j], 1): return 1
+            
     #2. check columns
     for k in range(0,7):
         column = []
@@ -108,8 +112,10 @@ def analysePosition(position):
             if connected(column, 0): return 0
         elif column.count(1) > 3:
             if connected(column, 1): return 1
+            
     #3. check diagonals, I'm repeating a codeblock here instead of using a function because it is more efficient
-    if fullRows < 4: return 2
+    if fullRows < 4: return 2 #can't have 4 in a row if less than 4 rows
+    
     #check top left (going down) diagonals
     for m in range(0,3):
         diagonal = []
@@ -120,6 +126,7 @@ def analysePosition(position):
             if connected(diagonal, 0): return 0
         elif diagonal.count(1) > 3:
             if connected(diagonal, 1): return 1
+            
     for q in range(1,4):
         if (7-q) - (6 - fullRows) < 4: break #if diagonals get shorter than 4 checkers we don't have to check them
         diagonal = []
@@ -128,6 +135,7 @@ def analysePosition(position):
             if connected(diagonal, 0): return 0
         elif diagonal.count(1) > 3:
             if connected(diagonal, 1): return 1
+            
     #check top right (going down) diagonals
     for o in range(0,3):
         diagonal = []
@@ -137,7 +145,8 @@ def analysePosition(position):
         if diagonal.count(0) > 3:
             if connected(diagonal, 0): return 0
         elif diagonal.count(1) > 3:
-            if connected(diagonal, 1): return 1                                 
+            if connected(diagonal, 1): return 1
+            
     for s in range(1,4):
         if (7-s) - (6 - fullRows) < 4: break
         diagonal = []
@@ -179,10 +188,6 @@ startPosition = [['','','','','','',''],
                 ['','','','','','',''],
                 ['','','','','','','']]
 
-#error in decideNextMove, can decide to make a move in a full column
-#happens because decide next move still analyses the winrate of placing a checker
-#in a full column. Indicates there is a much deeper error in the algorithm logic
-
 def mainLine(position):
     print("Welcome to connect 4! Input your moves by entering the column number you wish to place a checker in, columns are numbered 0 to 6 left to right")
     colour = 1
@@ -193,6 +198,7 @@ def mainLine(position):
         if analysePosition(position) == colour:
             print("--------You win!--------")
             return
+        
         colour = updateColour(colour)
         move = decideNextMove(position, colour, 6)
         position = updatePosition(position, move, colour)
@@ -200,6 +206,7 @@ def mainLine(position):
         if analysePosition(position) == colour:
             print("--------You lose :(--------")
             return
+        
         colour = updateColour(colour)
 
 
