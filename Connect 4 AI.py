@@ -53,8 +53,7 @@ def decideNextMove(position, colour, depth = 6):
     #4. choose the move with the least loss rate
     moves = genNextMoves(position, colour)
     moveLossRate = []*len(moves)
-    if colour == 1: lossColour = 0
-    else: lossColour = 1
+    lossColour = updateColour(colour)
     for i in range(len(moves)):
         positions = genPositions(moves[i], colour, depth)
         losses = 0
@@ -73,20 +72,21 @@ def genPositions(position, colour, depth = 6):
     #Setup positions array
     positions = [position]
     positions.append(genNextMoves(positions[0], colour))
+    colour = updateColour(colour)
     
     #Loop through and add positions as the next element in array (array looks like this [positions of depth1, positions of depth2, positions of depth3...])
     for i in range(1, depth):
         positions.append(genNextMoves(positions[i][0], colour))
         for k in range(1, len(positions[i])):
-            positions[i+1].extend(genNextMoves(positions[i][k], colour, k))
+            positions[i+1].extend(genNextMoves(positions[i][k], colour))
         colour = updateColour(colour)
     return positions[depth]
 
-def genNextMoves(position, colour, completedColumns = 0):
+def genNextMoves(position, colour):
     #returns an array of the positions possible in the next move
     #completedColumns avoids creating duplicate positions i.e. adding a checker in c1 then c2 is the same as c2 then c1
     positions = []
-    for i in range(completedColumns, 7):
+    for i in range(7):
         if position[0][i]: continue #check if top row is full
         
         positions.append([position[0][:], position[1][:], position[2][:], position[3][:], position[4][:], position[5][:]]) #Append a copy of position that is not linked to position
