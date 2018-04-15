@@ -46,7 +46,6 @@ def updatePosition(position, move, colour):
     return position
 
 def decideNextMove(position, colour, depth = 6):
-    #Improvement ideas: alpha-beta pruning, only use even numbered depths, you can't lose on your move
     #1. call genNextMoves on position
     #2. for each move generated call genPositions
     #3. analyse the loss rate of each move using analysePosition
@@ -54,7 +53,9 @@ def decideNextMove(position, colour, depth = 6):
     moves = genNextMoves(position, colour)
     moveLossRate = []*len(moves)
     lossColour = updateColour(colour)
+    
     for i in range(len(moves)):
+        #analyse the lossRate of a move
         positions = genPositions(moves[i], colour, depth)
         losses = 0
         other = 0
@@ -63,8 +64,15 @@ def decideNextMove(position, colour, depth = 6):
             if result == lossColour: losses = losses + 1
             else: other = other + 1
         moveLossRate.append(losses/(losses + other))
+    
+    move = moveLossRate.index(min(moveLossRate))
+    #must column correct the move to take into account starting positions with full rows who did not analyse 7 moves
+    i = 0
+    while i <= move:
+        if position[0][i] != '': move += 1
+        i += 1
     print(moveLossRate)
-    return moveLossRate.index(min(moveLossRate))
+    return move
 
 def genPositions(position, colour, depth = 6):
     #Repeatedly call genNextMoves until we reach the depth, then return the positions to decideNextMove which analyses the positions using analysePosition
@@ -87,7 +95,7 @@ def genNextMoves(position, colour):
     #completedColumns avoids creating duplicate positions i.e. adding a checker in c1 then c2 is the same as c2 then c1
     positions = []
     for i in range(7):
-        if position[0][i]: continue #check if top row is full
+        if position[0][i] != '': continue #check if top row is full
         
         positions.append([position[0][:], position[1][:], position[2][:], position[3][:], position[4][:], position[5][:]]) #Append a copy of position that is not linked to position
         positions[-1] = updatePosition(positions[-1], i, colour) #add a checker in column i
@@ -181,6 +189,13 @@ samplePosition = [[1 ,'','','','','',''],
                   [0 ,1 ,1 ,1 ,0 ,0 ,0 ],
                   [0 ,0 ,0 ,1 ,0 ,1 ,1 ]]
 
+samplePosition2 = [[1,'','',0 ,'','',''],
+                   [1,'','',1 ,'','',''],
+                   [0,'','',1 ,'','',''],
+                   [1,'','',0 ,'',1 ,''],
+                   [1,'','',0 ,'',1 ,''],
+                   [1,'','',0 ,'',1 ,'']]
+
 startPosition = [['','','','','','',''],
                 ['','','','','','',''],
                 ['','','','','','',''],
@@ -209,6 +224,5 @@ def mainLine(position):
         
         colour = updateColour(colour)
 
-
-mainLine(startPosition)
+#mainLine(startPosition)
 n = input("Press enter to quit")
