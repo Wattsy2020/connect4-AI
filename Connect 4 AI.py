@@ -45,11 +45,12 @@ def updatePosition(position, move, colour):
     position[emptySpaces][move] = colour
     return position
 
-def decideNextMove(position, colour, depth = 6):
+def decideNextMove(position, colour, depth = 5):
     #1. call genNextMoves on position
     #2. for each move generated call genPositions
     #3. analyse the loss rate of each move using analysePosition
     #4. choose the move with the least loss rate
+    
     moves = genNextMoves(position, colour)
     moveLossRate = []*len(moves)
     lossColour = updateColour(colour)
@@ -71,19 +72,14 @@ def decideNextMove(position, colour, depth = 6):
     while i <= move:
         if position[0][i] != '': move += 1
         i += 1
-    print(moveLossRate)
     return move
 
-def genPositions(position, colour, depth = 6):
-    #Repeatedly call genNextMoves until we reach the depth, then return the positions to decideNextMove which analyses the positions using analysePosition
-
-    #Setup positions array
-    positions = [position]
-    positions.append(genNextMoves(positions[0], colour))
-    colour = updateColour(colour)
+def genPositions(position, colour, depth = 5):
+    #Repeatedly call genNextMoves until we reach the depth
+    positions = [[position]]
     
-    #Loop through and add positions as the next element in array (array looks like this [positions of depth1, positions of depth2, positions of depth3...])
-    for i in range(1, depth):
+    #Loop through and add positions as the next element in array (array looks like this [positions of depth0, positions of depth1, positions of depth2, ...])
+    for i in range(depth):
         positions.append(genNextMoves(positions[i][0], colour))
         for k in range(1, len(positions[i])):
             positions[i+1].extend(genNextMoves(positions[i][k], colour))
@@ -215,7 +211,7 @@ def mainLine(position):
             return
         
         colour = updateColour(colour)
-        move = decideNextMove(position, colour, 6)
+        move = decideNextMove(position, colour)
         position = updatePosition(position, move, colour)
         #check if game won
         if analysePosition(position) == colour:
