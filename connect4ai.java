@@ -1,5 +1,7 @@
 package connect4ai;
 
+import java.util.ArrayList;
+
 class Analysis{
     //contains all the analysis methods used by the program
     
@@ -132,9 +134,10 @@ class Analysis{
 }
 
 class Position{
-    //whether the position is won or lost: 0 = red wins, 1 = blue wins, 2 = even, 3 = not analysed
-    private int State = 3;
-    
+    //the players colour, if analysePosition returns this the position is lost
+    public static int lossColour;
+    //whether the position is won or lost: -1 = loss, 0 = even, 1 = won
+    public int State;
     //represents the board as a multidimensional array, 0 = red checker 1 = blue checker 2 = empty
     public int[][] board = new int[6][7];
     
@@ -142,15 +145,12 @@ class Position{
         for(int i = 0; i < array.length; i++){
             System.arraycopy(array[i], 0, board[i], 0, array[i].length);
         }
+        int result = Analysis.analysePosition(this);
+        if (result == 2){State = 0;}
+        else if (result == lossColour){State = -1;}
+        else{State = 1;}
     }
-    
-    public int getState(){
-        if (State == 3){
-            State = Analysis.analysePosition(this);
-        }
-        return State;
-    }
-    
+            
     public void displayPosition(){
         for (int[] board1 : board) {
             for (int j = 0; j < board1.length; j++) {
@@ -165,12 +165,46 @@ class Position{
             }
             System.out.println();
         }
+        System.out.println();
     }
+    
 }
 
+class gameTree{
+    //A multidimensional Arraylist containing positions in the tree organised by levels
+    private ArrayList<ArrayList<Position>> positions = new ArrayList<>();
+    //stores the index of the current root node of the tree
+    private int[] rootNode = {0,0};
+    
+    //Generates the positions possible in the next move from the input position
+    public ArrayList<Position> genNextPositions(Position pos, int colour){
+        ArrayList<Position> nextPositions = new ArrayList<>();
+        for(int i = 0; i < 7; i++){
+            if (pos.board[0][i] != 2){continue;} //don't add a checker in a full column
+            
+            int lowestEmptySpace = 5;
+            while (pos.board[lowestEmptySpace][i] != 2){
+                lowestEmptySpace--;
+            }
+            pos.board[lowestEmptySpace][i] = colour;
+            
+            Position newPos = new Position(pos.board);
+            nextPositions.add(newPos);
+            pos.board[lowestEmptySpace][i] = 2; //reset position for the next iteration
+        }
+        return nextPositions;
+    }
+    
+    //Adds a new level to the tree by calling genNextPositions() on the current level
+    public void genNewLevel(){
+        //need to think of a way to associate each position with it's parent
+    }
+    
+}
 
-public class Connect4ai {
+class Connect4ai {
     public static void main(String[] args) {
+        Position.lossColour = 0;
         int[][] startPosArray = {{2,2,2,2,2,2,2}, 
                                  {2,2,2,2,2,2,2},
                                  {2,2,2,2,2,2,2},
@@ -187,11 +221,8 @@ public class Connect4ai {
                 
         Position startPos = new Position(startPosArray);
         Position samplePos = new Position(samplePosArray);
+        gameTree tree = new gameTree();
         
-        samplePos.displayPosition();
-        System.out.println(Analysis.analysePosition(samplePos));
-        for (int i = 0; i < 10000000; i++){
-            Analysis.analysePosition(samplePos);
-        }
-    }  
+        
+    }
 }
