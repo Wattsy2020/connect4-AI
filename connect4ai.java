@@ -5,9 +5,8 @@ import java.util.ArrayList;
 class Analysis{
     //contains all the analysis methods used by the program
     
-    public static int connected(int[] line){
-        //checks if a line (maximum 7 checkers) contains 4 checkers in a row, returns 0 if red wins, 1 if blue wins, 2 if none
-        
+    //checks if a line (maximum 7 checkers) contains 4 checkers in a row, returns 0 if red wins, 1 if blue wins, 2 if none
+    public static int connected(int[] line){        
         int j = 0;
         int maxTests = line.length - 3;
         while (j < maxTests){
@@ -27,8 +26,8 @@ class Analysis{
         return 2;
     }
     
+    //Determines whether a positions is won, lost or even
     public static int analysePosition(Position pos){
-        //Determines whether a positions is won, lost or even
         
         //check rows
         int fullRows = 6;
@@ -131,6 +130,68 @@ class Analysis{
         
         return 2;
     }
+    
+    //Analyse a position created from a parent (only have to check the modified row, column and diagonals)
+    public static int analyseChildPosition(Position child, int[] move){
+        //check row
+        int result = connected(child.board[move[0]]);
+        if (result != 2){ return result;}
+        
+        //check column
+        int[] column = new int[6];
+        for(int i = 0; i < 6; i++){
+            column[i] = child.board[i][move[1]];
+        }
+        result = connected(column);
+        if (result != 2){ return result;}
+        
+        //check top left to bottom right diagonal
+        int[] topLeftStart = new int[2]; //coordinates of the start of the diagonal
+        int length;
+        if (move[0] >= move[1]){
+            topLeftStart[0] = move[0] - move[1];
+            topLeftStart[1] = 0;
+            length = 6 - topLeftStart[0];
+        }
+        else { 
+            topLeftStart[0] = 0;
+            topLeftStart[1] = move[1] - move[0];
+            length = 7 - topLeftStart[1];
+        }
+        
+        //construct diagonal
+        int[] diagonal = new int[length];
+        int i = 0;
+        while (i < length){
+            diagonal[i] = child.board[topLeftStart[0] + i][topLeftStart[1] + i];
+            i++;
+        }
+        
+        result = connected(diagonal);
+        if (result != 2){ return result;}
+        
+        //check top right to bottom left diagonal
+        int[] topRightStart = new int[2]; //coordinates of the start of the diagonal
+        if (move[0] >= 6 - move[1]){
+            topRightStart[0] = move[0] - (6 - move[1]);
+            topRightStart[1] = 6;
+            length = 6 - topRightStart[0];
+        }
+        else{
+            topRightStart[0] = 0;
+            topRightStart[1] = move[1] + move[0];
+            length = topRightStart[1] + 1;
+        }
+        
+        //construct diagonal array
+        i = 0;
+        int[] diagonal2 = new int[length];
+        while (i < length){
+            diagonal2[i] = child.board[topRightStart[0] + i][topRightStart[1] - i];
+            i++;
+        }
+        return connected(diagonal2);
+    }
 }
 
 class Position{
@@ -140,9 +201,13 @@ class Position{
     public int State;
     //represents the board as a multidimensional array, 0 = red checker 1 = blue checker 2 = empty
     public int[][] board = new int[6][7];
+    //references to parent and children positions, useful for the minimax algorithm
+    public Position parent;
+    public ArrayList<Position> children = new ArrayList<>();
     
+    //create a position from a multidimensional array
     public Position(int[][] array){
-        for(int i = 0; i < array.length; i++){
+        for(int i = 0; i < 6; i++){
             System.arraycopy(array[i], 0, board[i], 0, array[i].length);
         }
         int result = Analysis.analysePosition(this);
@@ -150,7 +215,21 @@ class Position{
         else if (result == lossColour){State = -1;}
         else{State = 1;}
     }
-            
+    
+    //create a position by placing a checker in the parent position
+    public Position(Position Parent, int[] move, int colour){
+        parent = Parent;
+        for(int i = 0; i < 6; i++){
+            System.arraycopy(Parent.board[i], 0, board[i], 0, Parent.board[i].length);
+        }
+        board[move[0]][move[1]] = colour;
+        
+        int result = Analysis.analyseChildPosition(this, move);
+        if (result == 2){State = 0;}
+        else if (result == lossColour){State = -1;}
+        else{State = 1;}
+    }
+    
     public void displayPosition(){
         for (int[] board1 : board) {
             for (int j = 0; j < board1.length; j++) {
@@ -182,22 +261,24 @@ class gameTree{
         for(int i = 0; i < 7; i++){
             if (pos.board[0][i] != 2){continue;} //don't add a checker in a full column
             
+            //find lowestEmptySpace
             int lowestEmptySpace = 5;
             while (pos.board[lowestEmptySpace][i] != 2){
                 lowestEmptySpace--;
             }
-            pos.board[lowestEmptySpace][i] = colour;
             
-            Position newPos = new Position(pos.board);
+            //Create new position and append to return positions and the parent's children
+            int[] move = {lowestEmptySpace, i};
+            Position newPos = new Position(pos, move, colour);
             nextPositions.add(newPos);
-            pos.board[lowestEmptySpace][i] = 2; //reset position for the next iteration
+            pos.children.add(newPos);
         }
         return nextPositions;
     }
     
     //Adds a new level to the tree by calling genNextPositions() on the current level
     public void genNewLevel(){
-        //need to think of a way to associate each position with it's parent
+        
     }
     
 }
