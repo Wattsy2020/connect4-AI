@@ -99,8 +99,6 @@ class Position{
     //references to parent and children positions, useful for the minimax algorithm
     public Position parent;
     public ArrayList<Position> children = new ArrayList<>();
-    //the location of the position in the tree, in the form {level, position in level}
-    public int[] treeLocation = new int[2];
     
     //explicitly define a position (only used for startingPosition or sample positions)
     public Position(int[][] array, int result){
@@ -147,19 +145,17 @@ class Position{
 class gameTree{
     //A multidimensional Arraylist containing positions in the tree organised by levels
     private ArrayList<ArrayList<Position>> positions = new ArrayList<>();
-    //reference to the root of the tree
-    private Position rootNode;
+    //the current position of the rootNode in the form Level, Levelposition
+    private int[] rootNode = {0,0};
+    //the largest size a level can be without taking too long to analyse
+    private final int levelLimit = 1000000;
     
     //Generates the positions possible in the next move from the input position
-    private ArrayList<Position> genNextPositions(Position parent, int colour, int newLevelSize){
+    private ArrayList<Position> genNextPositions(Position parent, int colour){
         ArrayList<Position> nextPositions = new ArrayList<>();
-        int offset = 0; //needed to correctly assign the treeLocation of newPos
         
         for(int i = 0; i < 7; i++){
-            if (parent.board[0][i] != 2){ //don't add a checker in a full column
-                offset++;
-                continue;
-            }
+            if (parent.board[0][i] != 2){ continue;} //don't add a checker in a full column
             
             //find lowestEmptySpace
             int lowestEmptySpace = 5;
@@ -170,10 +166,8 @@ class gameTree{
             //Create new position
             int[] move = {lowestEmptySpace, i};
             Position newPos = new Position(parent, move, colour);
-            newPos.treeLocation[0] = parent.treeLocation[0] + 1;
-            newPos.treeLocation[1] = newLevelSize + i - offset;
             
-            //Append new position to arrays
+            //Append new position to arrayLists
             nextPositions.add(newPos);
             parent.children.add(newPos);
         }
@@ -190,7 +184,7 @@ class gameTree{
             Position parent = positions.get(Levels).get(i);
             
             if (parent.state == 0){ //if the position isn't won or lost
-                ArrayList<Position> children = genNextPositions(parent, colour, newLevel.size());
+                ArrayList<Position> children = genNextPositions(parent, colour);
                 
                 //add children positions to newLevel
                 for(int j = 0; j < children.size(); j++){
@@ -207,7 +201,6 @@ class gameTree{
         ArrayList<Position> startLevel = new ArrayList<>();
         startLevel.add(startPosition);
         positions.add(startLevel);
-        rootNode = startPosition;
         
         //call genNewLevel() until depth is reached
         for(int i = 0; i < depth; i++) {
@@ -217,28 +210,29 @@ class gameTree{
         }
     }
     
-    //remove all descendants of the position
-    public void removeChildren(Position parent){
-        if (parent.children.isEmpty()){ return; } //if a position doesn't have any children it is safe to remove it
+    //replaces positions with a new ArrayList containing the descendants of the new rootNode
+    private void narrowTree(){
+        //define the newPositions ArrayList
+        ArrayList<ArrayList<Position>> newPositions = new ArrayList<>();
+        ArrayList<Position> startLevel = new ArrayList<>();
+        startLevel.add(positions.get(rootNode[0]).get(rootNode[1]));
+        newPositions.add(startLevel);
         
-        for(int i = parent.children.size() - 1; i > -1; i--){
-            //recursively remove the children of the child position before removing the child position
-            Position child = parent.children.get(i);
-            removeChildren(child);
-            positions.get(child.treeLocation[0]).remove(child.treeLocation[1]);
-        }
-    }
-    
-    //removes the positions in the tree that aren't descendants of the new rootnode
-    public void narrowTree(){
-        //loop through the positions on the same level as rootNode
-        for(int i = positions.get(rootNode.treeLocation[0]).size() - 1; i > - 1; i--){
-            if (i == rootNode.treeLocation[1]) {continue;} //don't remove the rootnode
+        //create each level based on the last one
+        for(int i = 0; i < positions.size() - 2; i++){
+            ArrayList<Position> newLevel = new ArrayList<>();
             
-            //remove their children, then remove them
-            removeChildren(positions.get(rootNode.treeLocation[0]).get(i));
-            positions.get(rootNode.treeLocation[0]).remove(i);
+            //loop through each position in the previous level
+            for(int j = 0; j < newPositions.get(i).size(); j++){
+                //loop through each child
+                for(int k = 0; k < newPositions.get(i).get(j).children.size(); k++){
+                    newLevel.add(newPositions.get(i).get(j).children.get(k));
+                }
+            }
+            newPositions.add(newLevel);
         }
+        
+        positions = newPositions;
     }
 }
 
