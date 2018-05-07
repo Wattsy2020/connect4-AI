@@ -1,6 +1,7 @@
 package connect4ai;
 
 import java.util.ArrayList;
+import java.util.Scanner;
 
 class Analysis{
     //contains all the analysis methods used by the program
@@ -90,15 +91,18 @@ class Analysis{
 }
 
 class Position{
-    //the players colour, if analysePosition returns this the position is lost
-    public static int lossColour;
     //whether the position is won or lost: -1 = loss, 0 = even, 1 = won
     public int state;
     //represents the board as a multidimensional array, 0 = red checker 1 = blue checker 2 = empty
     public int[][] board = new int[6][7];
+    //the players colour
+    public static int playerColour;
     //references to parent and children positions, useful for the minimax algorithm
     public Position parent;
     public ArrayList<Position> children = new ArrayList<>();
+    //useful for minimax algorithm, between -1 and 1
+    public int nodeValue;
+    
     
     //explicitly define a position (only used for startingPosition or sample positions)
     public Position(int[][] array, int result){
@@ -106,7 +110,7 @@ class Position{
             System.arraycopy(array[i], 0, board[i], 0, array[i].length);
         }
         if (result == 2){state = 0;}
-        else if (result == lossColour){state = -1;}
+        else if (result == playerColour){state = -1;}
         else{state = 1;}
     }
     
@@ -120,7 +124,7 @@ class Position{
         
         int result = Analysis.analysePosition(board, move);
         if (result == 2){state = 0;}
-        else if (result == lossColour){state = -1;}
+        else if (result == playerColour){state = -1;}
         else{state = 1;}
     }
     
@@ -138,17 +142,22 @@ class Position{
             }
             System.out.println();
         }
-        System.out.println();
+        System.out.println(" 0  1  2  3  4  5  6");
     }
 }
 
 class gameTree{
     //A multidimensional Arraylist containing positions in the tree organised by levels
     private ArrayList<ArrayList<Position>> positions = new ArrayList<>();
-    //the current position of the rootNode in the form Level, Levelposition
-    private int[] rootNode = {0,0};
+    //the root of the gameTree
+    public Position root;
     //the largest size a level can be without taking too long to analyse
-    private final int levelLimit = 1000000;
+    private final int levelLimit = 2000000;
+    
+    private int updateColour(int colour){
+        if (colour == 0){return 1;}
+        return 0;
+    }
     
     //Generates the positions possible in the next move from the input position
     private ArrayList<Position> genNextPositions(Position parent, int colour){
@@ -198,6 +207,7 @@ class gameTree{
     //initialises the gameTree by repeatedly calling genNewLevel()
     public gameTree(int depth, Position startPosition, int colour){
         //define the first level
+        root = startPosition;
         ArrayList<Position> startLevel = new ArrayList<>();
         startLevel.add(startPosition);
         positions.add(startLevel);
@@ -205,17 +215,16 @@ class gameTree{
         //call genNewLevel() until depth is reached
         for(int i = 0; i < depth; i++) {
             genNewLevel(colour);
-            if (colour == 1){colour = 0;} //update the colour
-            else {colour = 1;}
+            colour = updateColour(colour);
         }
     }
     
     //replaces positions with a new ArrayList containing the descendants of the new rootNode
-    private void narrowTree(){
+    public void narrowTree(int newRoot){
         //define the newPositions ArrayList
         ArrayList<ArrayList<Position>> newPositions = new ArrayList<>();
         ArrayList<Position> startLevel = new ArrayList<>();
-        startLevel.add(positions.get(rootNode[0]).get(rootNode[1]));
+        startLevel.add(positions.get(1).get(newRoot));
         newPositions.add(startLevel);
         
         //create each level based on the last one
@@ -231,14 +240,87 @@ class gameTree{
             }
             newPositions.add(newLevel);
         }
-        
         positions = newPositions;
+        root = positions.get(0).get(0);
+    }
+    
+    private int leafNodeValue(Position pos){
+        //dummy function, improve later
+        return pos.state;
+    }
+    
+    private int maximiserValue(Position pos, int alpha, int beta){
+        //if it doesn't have children, generate some to analyse
+        if (pos.children.isEmpty()){
+            if (pos.state == -1 ) {return -1;} //if the position is lost return
+            genNextPositions(pos, updateColour(Position.playerColour));
+        }
+        
+        pos.nodeValue = - 1; //initialise nodeValue to worst case scenario
+        for(int i = 0; i < pos.children.size(); i++){
+            int childValue = minimiserValue(pos.children.get(i), alpha, beta);
+            
+            //if childValue is better than beta the minimiser would never go here
+            if (childValue > beta){return childValue;}
+            //update nodeValue and alpha if a better option is available
+            if (childValue > pos.nodeValue){
+                pos.nodeValue = childValue;
+                if (childValue > alpha){alpha = childValue;}
+            }
+        }
+        return pos.nodeValue;
+    }
+    
+    private int minimiserValue(Position pos, int alpha, int beta){
+        //stop recursion if it is a leaf node
+        if (pos.children.isEmpty()){return leafNodeValue(pos);}
+        
+        pos.nodeValue = 1; //initialise nodeValue to worst case scenario
+        for(int i = 0; i < pos.children.size(); i++){
+            int childValue = maximiserValue(pos.children.get(i), alpha, beta);
+            
+            //if childValue is worse than alpha the maximiser would never go here
+            if (childValue < alpha){return childValue;}
+            //update nodeValue and beta if a better option is available
+            if (childValue < pos.nodeValue){
+                pos.nodeValue = childValue;
+                if (childValue < beta) {beta = childValue;}
+            }
+        }
+        return pos.nodeValue;
+    }
+    
+    public void findBestMove(){
+        //generateNewLevel if the size of the newLevel would be less than the levelLimit
+        int colour = updateColour(Position.playerColour);
+        while (positions.get(positions.size() - 1).size() < levelLimit/6){
+            genNewLevel(colour);
+            colour = updateColour(Position.playerColour);
+        }
+        
+        root = positions.get(0).get(0);
+        root.nodeValue = - 1; //initialise nodeValue to worst case scenario
+        int bestMove = 0;
+        
+        //note alpha = best already explored option along the path to the root for the maximiser and beta is the same for the minimiser
+        for(int i = 0; i < root.children.size(); i++){
+            int childValue = minimiserValue(root.children.get(i), root.nodeValue, 1);
+            
+            //update nodeValue if a better option is found
+            if (childValue > root.nodeValue) {
+                root.nodeValue = childValue;
+                bestMove = i;
+            }
+            if (root.nodeValue == 1) {break;}
+        }
+        
+        narrowTree(bestMove);
     }
 }
 
 class Connect4ai {
     public static void main(String[] args) {
-        Position.lossColour = 0;
+        Position.playerColour = 0;
         int[][] startPosArray = {{2,2,2,2,2,2,2}, 
                                  {2,2,2,2,2,2,2},
                                  {2,2,2,2,2,2,2},
@@ -247,16 +329,24 @@ class Connect4ai {
                                  {2,2,2,2,2,2,2}};
               
         int[][] samplePosArray = {{1,2,2,2,2,2,2},
-                                  {0,2,2,2,2,2,1},
+                                  {0,2,2,2,2,2,0},
                                   {1,1,2,2,2,1,1},
                                   {0,0,1,2,1,0,1},
                                   {0,1,1,0,0,1,0},
                                   {0,1,0,0,0,1,1}};
+        
+        int[][] testPosArray = {{2,2,2,2,2,2,2}, 
+                                 {2,2,2,2,2,2,2},
+                                 {1,2,2,2,2,2,2},
+                                 {0,2,2,2,2,2,2},
+                                 {0,2,2,2,2,2,2},
+                                 {0,2,1,1,1,2,2}};
                 
         Position startPos = new Position(startPosArray, 2);
         Position samplePos = new Position(samplePosArray, 2);
-        gameTree tree = new gameTree(7, startPos, 1);
-        
-        
+        Position testPos = new Position(testPosArray, 2);
+        gameTree tree = new gameTree(7, samplePos, Position.playerColour);
+        Scanner sc = new Scanner(System.in);
+        int move;
     }
 }
