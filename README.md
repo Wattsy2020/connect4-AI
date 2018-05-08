@@ -1,13 +1,7 @@
 # connect4-AI
-Simple artificial intelligence that plays connect4
+Artificial intelligence that plays connect4
 
 How it works:
-1. Generate all possible positions a number of moves from now
-2. Analyse positions to determine which ones are lost
-3. Choose the move that results in the least lost positions
-
-How to use it:
-1. Download connect4-AI.py
-2. Download and install python 3 here: https://www.python.org/downloads/
-3. On windows upon up command prompt and type   pip install colorama
-4. Double click on connect4-AI.py to launch it
+1. The MiniMax algorithm - an algorithm that finds the best path for the maximising player assuming the minimising player takes the best path available to them
+2. Alpha-beta pruning - a tree pruning method that greatly increases the efficiency of the MiniMax algorithm
+3. Iterative deepening - the algorithm analyses a tree of depth 1, then depth 2 etc... until analysing the next depth is too costly. This is a cost efficient way to manage the time the algorithm takes.
