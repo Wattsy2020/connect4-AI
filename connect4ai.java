@@ -315,6 +315,8 @@ class gameTree{
 }
 
 class Connect4ai {
+    private static Scanner sc = new Scanner(System.in);
+    
     public static void main(String[] args) {
         Position.playerColour = 0;
         int[][] startPosArray = {{2,2,2,2,2,2,2}, 
@@ -341,8 +343,45 @@ class Connect4ai {
         Position startPos = new Position(startPosArray, 2);
         Position samplePos = new Position(samplePosArray, 2);
         Position testPos = new Position(testPosArray, 2);
-        gameTree tree = new gameTree(testPos);
         
-        tree.decideMove().displayPosition();
+        gameTree tree = new gameTree(startPos);
+        Position currentPos = startPos;
+        
+        //UI loop
+        System.out.println("Welcome to connect4! Enter your moves by typing a column number between 0 and 6");
+        System.out.println("If the Systems evaluation is -1 that means you have a forced win, good luck finding it!");
+        currentPos.displayPosition();
+        while (true){
+            currentPos = getPlayerMove(currentPos);
+            currentPos.displayPosition();
+            if (currentPos.state == -1){
+                System.out.println("You win!");
+                break;
+            }
+            
+            tree.root = currentPos;
+            currentPos = tree.decideMove();
+            currentPos.displayPosition();
+            if (currentPos.state == 1){
+                System.out.println("You lose");
+                break;
+            }
+        }
+    }
+    
+    private static Position getPlayerMove(Position pos){
+        System.out.printf("Enter move: ");
+        int column = sc.nextInt();
+        System.out.println();
+        
+        int lowestEmptySpace = 5;
+        while (pos.board[lowestEmptySpace][column] != 2){
+            lowestEmptySpace--;
+        }
+        
+        int[] move = {lowestEmptySpace, column};
+        Position playerPos = new Position(pos, move, Position.playerColour);
+        playerPos.level = 0;
+        return playerPos;
     }
 }
