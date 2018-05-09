@@ -1,11 +1,13 @@
 package connect4ai;
 
+import java.util.ArrayList;
+import java.util.Scanner;
+
 class Analysis{
     //contains all the analysis methods used by the program
     
-    public static int connected(int[] line){
-        //checks if a line (maximum 7 checkers) contains 4 checkers in a row, returns 0 if red wins, 1 if blue wins, 2 if none
-        
+    //checks if a line (maximum 7 checkers) contains 4 checkers in a row, returns 0 if red wins, 1 if blue wins, 2 if none
+    public static int connected(int[] line){        
         int j = 0;
         int maxTests = line.length - 3;
         while (j < maxTests){
@@ -25,130 +27,110 @@ class Analysis{
         return 2;
     }
     
-    public static int analysePosition(Position pos){
-        //Determines whether a positions is won, lost or even
+    //Analyse a position created from an even parent (only have to check the modified row, column and diagonals)
+    public static int analysePosition(int[][] board, int[] move){
+        //check row
+        int result = connected(board[move[0]]);
+        if (result != 2){ return result;}
         
-        //check rows
-        int fullRows = 6;
-        for (int i = 0; i < 6; i++){
-            //check if row is empty
-            int sum = 0;
-            for (int j = 0; j < 7; j++){
-                sum += pos.board[i][j];
-            }           
-            if (sum == 14){ //i.e. there are 7 twos so the row is empty
-                fullRows -= 1;
-            }
-            
-            int result = connected(pos.board[i]);
-            if (result != 2){
-                return result;
-            }
+        //check column
+        int[] column = new int[6];
+        for(int i = 0; i < 6; i++){
+            column[i] = board[i][move[1]];
+        }
+        result = connected(column);
+        if (result != 2){ return result;}
+        
+        //check top left to bottom right diagonal
+        int[] topLeftStart = new int[2]; //coordinates of the start of the diagonal
+        int length;
+        if (move[0] >= move[1]){
+            topLeftStart[0] = move[0] - move[1];
+            topLeftStart[1] = 0;
+            length = 6 - topLeftStart[0];
+        }
+        else { 
+            topLeftStart[0] = 0;
+            topLeftStart[1] = move[1] - move[0];
+            length = 7 - topLeftStart[1];
         }
         
-        if (fullRows < 4){ //can't have 4 in a row in a column/diagonal if less than 4 rows
-            return 2;
+        //construct diagonal
+        int[] diagonal = new int[length];
+        int i = 0;
+        while (i < length){
+            diagonal[i] = board[topLeftStart[0] + i][topLeftStart[1] + i];
+            i++;
         }
         
-        //check columns
-        int[] column = new int[fullRows];
-        for (int j = 0; j < 7; j++){
-            //construct the column array from bottom row to top
-            for (int k = 5; k > 5 - fullRows; k--){
-                column[5 - k] = pos.board[k][j];
-            }
-            
-            int result = connected(column);
-            if (result != 2){
-                return result;
-            }
+        result = connected(diagonal);
+        if (result != 2){ return result;}
+        
+        //check top right to bottom left diagonal
+        int[] topRightStart = new int[2]; //coordinates of the start of the diagonal
+        if (move[0] >= 6 - move[1]){
+            topRightStart[0] = move[0] - (6 - move[1]);
+            topRightStart[1] = 6;
+            length = 6 - topRightStart[0];
+        }
+        else{
+            topRightStart[0] = 0;
+            topRightStart[1] = move[1] + move[0];
+            length = topRightStart[1] + 1;
         }
         
-        //check diagonals from [0,0] to [6,6] then [1,0] to [6,5] then [2,0] to [6,4]
-        for (int m = 0; m < 3; m++){
-            //construct diagonal array
-            int[] diagonal = new int [6 - m];
-            int i = 0;
-            for (int n = 6 - fullRows; n < 6; n++){
-                if ((n - m) < 0){
-                    continue;
-                }
-                diagonal[i] = pos.board[n][n-m];
-                i++;
-            }
-            
-            int result = connected(diagonal);
-            if (result != 2){
-                return result;
-            }           
+        //construct diagonal array
+        i = 0;
+        int[] diagonal2 = new int[length];
+        while (i < length){
+            diagonal2[i] = board[topRightStart[0] + i][topRightStart[1] - i];
+            i++;
         }
-        
-        //check diagonals from [0, 1] to [6,7] than [0,2] to [5,7] then [0,3] to [4,7]
-        for (int q = 1; q < 4; q++){
-            int[] diagonal = new int[1 + fullRows - q];
-            for (int r = 6 - fullRows; r < (7 - q); r++){
-                diagonal[r + fullRows - 6] = pos.board[r][q + r];
-            }
-            
-            int result = connected(diagonal);
-            if (result != 2){
-                return result;
-            }
-        }
-        
-        //check diagonals from [0, 7] to [6,1] than [1, 7] to [6,2] ...
-        for (int o = 0; o < 3; o++){
-            int[] diagonal = new int [6 - o];
-            int i = 0;
-            for (int p = 6 - fullRows; p < 6; p++){
-                if ((p - o) < 0){
-                    continue;
-                }
-                diagonal[i] = pos.board[p][6 - (p - o)];
-                i++;
-            }
-            
-            int result = connected(diagonal);
-            if (result != 2){
-                return result;
-            }           
-        }
-        
-        //check diagonals from [0, 6] to [6,0] than [0,5] to [5,0] then [0,3] to [4,7]
-        for (int s = 1; s < 4; s++){
-            int[] diagonal = new int[1 + fullRows - s];
-            for (int t = 6 - fullRows; t < (7 - s); t++){
-                diagonal[t + fullRows - 6] = pos.board[t][6 - (s + t)];
-            }
-            
-            int result = connected(diagonal);
-            if (result != 2){
-                return result;
-            }
-        }
-        
-        return 2;
+        return connected(diagonal2);
     }
 }
 
 class Position{
-    //whether the position is won or lost: 0 = red wins, 1 = blue wins, 2 = even, 3 = not analysed
-    private int State = 3;
-    
+    //whether the position is won or lost: -1 = loss, 0 = even, 1 = won
+    public int state;
     //represents the board as a multidimensional array, 0 = red checker 1 = blue checker 2 = empty
     public int[][] board = new int[6][7];
+    //the players colour
+    public static int playerColour;
+    //references to children positions, useful for the minimax algorithm
+    public ArrayList<Position> children = new ArrayList<>();
+    public int minChildColumn = 0; //the smallest column a checker could be placed in to create a new child
+    private int numChildrenStore = -1; //storage for the number of children, only calculated through numChildren() method
+    //useful for minimax algorithm, between -1 and 1
+    public int nodeValue;
+    //level of the position, needed for iterative deepening
+    public int level;
     
-    public Position(int[][] array){
-        for(int i = 0; i < array.length; i++){
+    
+    //explicitly define a position (only used for startingPosition or sample positions)
+    public Position(int[][] array, int result){
+        for(int i = 0; i < 6; i++){
             System.arraycopy(array[i], 0, board[i], 0, array[i].length);
         }
+        if (result == 2){state = 0;}
+        else if (result == playerColour){state = -1;}
+        else{state = 1;}
+        level = 0;
     }
     
-    public int getState(){
-        if (State == 3){
-            State = Analysis.analysePosition(this);
+    //create a position by placing a checker in the parent position
+    public Position(Position Parent, int[] move, int colour){
+        for(int i = 0; i < 6; i++){
+            System.arraycopy(Parent.board[i], 0, board[i], 0, Parent.board[i].length);
         }
-        return State;
+        board[move[0]][move[1]] = colour;
+        level  = Parent.level;
+        level++;
+        
+        int result = Analysis.analysePosition(board, move);
+        if (result == 2){state = 0;}
+        else if (result == playerColour){state = -1;}
+        else{state = 1;}
     }
     
     public void displayPosition(){
@@ -165,12 +147,176 @@ class Position{
             }
             System.out.println();
         }
+        System.out.println(" 0  1  2  3  4  5  6");
+    }
+    
+    public int numChildren(){
+        if (numChildrenStore != -1){return numChildrenStore;}
+        
+        int numChildren = 7;
+        //check if there are any full columns
+        for(int i = 0; i < 7; i++){
+            if (board[0][i] != 2){numChildren--;}
+        }
+        
+        numChildrenStore = numChildren; //stores numChildren for future reference
+        return numChildren;
     }
 }
 
+class gameTree{
+    //the root of the gameTree
+    public Position root;
+    //the largest size a level can be without taking too long to analyse
+    private final int levelLimit = 2000000;
+    //keeps track of how many levels findBestMove has analysed
+    private int currentLevelSize;
+    private int depth;
+    
+    private int updateColour(int colour){
+        if (colour == 0){return 1;}
+        return 0;
+    }
+    
+    //adds a child to the parent position by placing a checker in minColumn or the next free column after that
+    public void addChild(Position parent, int colour){
+        //find column to place checker in
+        while (parent.board[0][parent.minChildColumn] != 2){ //while column is full
+            parent.minChildColumn++;
+        }
+        
+        //create new position
+        int lowestEmptySpace = 5;
+        while (parent.board[lowestEmptySpace][parent.minChildColumn] != 2){
+            lowestEmptySpace--;
+        }
+        int[] move = {lowestEmptySpace, parent.minChildColumn};
+        Position newPos = new Position(parent, move, colour);
+        
+        parent.children.add(newPos);
+        parent.minChildColumn++;
+        currentLevelSize++;
+    }
+    
+    public gameTree(Position startPosition){
+        root = startPosition;
+    }
+    
+    private int leafNodeValue(Position pos){
+        //dummy function, improve later
+        return pos.state;
+    }
+    
+    private int maximiserValue(Position pos, int alpha, int beta){
+        //stop recursion if it is won or lost
+        if (pos.state != 0){return pos.state;}
+        //stop recursion if it is a leaf node
+        if (pos.level == depth){return leafNodeValue(pos);}
+        
+        pos.nodeValue = - 1; //initialise nodeValue to worst case scenario
+        int numChildren = pos.numChildren();
+        for(int i = 0; i < numChildren; i++){
+            //generate child if needed
+            if (pos.children.size() == i){
+                addChild(pos, updateColour(Position.playerColour));
+            }
+            
+            int childValue = minimiserValue(pos.children.get(i), alpha, beta); //find the nodeValue of a child
+            
+            //if childValue is better than beta the minimiser would never go here
+            if (childValue > beta){return childValue;}
+            //update nodeValue and alpha if a better option is available
+            if (childValue > pos.nodeValue){
+                pos.nodeValue = childValue;
+                if (childValue > alpha){alpha = childValue;}
+            }
+        }
+        return pos.nodeValue;
+    }
+    
+    private int minimiserValue(Position pos, int alpha, int beta){
+        //stop recursion if it is won or lost
+        if (pos.state != 0){return pos.state;}
+        //stop recursion if it is a leaf node
+        if (pos.level == depth){return leafNodeValue(pos);}
+        
+        pos.nodeValue = 1; //initialise nodeValue to worst case scenario
+        int numChildren = pos.numChildren();
+        for(int i = 0; i < numChildren; i++){
+            //generate child if needed
+            if (pos.children.size() == i){
+                addChild(pos, Position.playerColour);
+            }
+            
+            int childValue = maximiserValue(pos.children.get(i), alpha, beta); //find the nodeValue of a child
+            
+            //if childValue is worse than alpha the maximiser would never go here
+            if (childValue < alpha){return childValue;}
+            //update nodeValue and beta if a better option is available
+            if (childValue < pos.nodeValue){
+                pos.nodeValue = childValue;
+                if (childValue < beta) {beta = childValue;}
+            }
+        }
+        return pos.nodeValue;
+    }
+    
+    public int findBestMove(){
+        root.nodeValue = - 1; //initialise nodeValue to worst case scenario
+        int bestMove = 0;
+        int numChildren = root.numChildren();
+        
+        //note alpha = best already explored option along the path to the root for the maximiser and beta is the same for the minimiser
+        for(int i = 0; i < numChildren; i++){
+            //generate child if needed
+            if (root.children.size() == i){
+                addChild(root, updateColour(Position.playerColour));
+            }
+            
+            int childValue = minimiserValue(root.children.get(i), root.nodeValue, 1);
+            
+            //update nodeValue if a better option is found
+            if (childValue > root.nodeValue) {
+                root.nodeValue = childValue;
+                bestMove = i;
+            }
+            if (root.nodeValue == 1) {break;}
+        }
+        return bestMove;
+    }
+    
+    //iterative deepening algorithm that uses findBestMove
+    public Position decideMove(){
+        int bestMove = 0;
+        int newMove;
+        depth = 1;
+        int prevLevelSize = 1;
+        currentLevelSize = 1;
+        
+        //keep searching until the next level would have a larger size than the levelLimit
+        while (currentLevelSize*((double)currentLevelSize/prevLevelSize) < levelLimit){
+            //update level sizes
+            prevLevelSize = currentLevelSize;
+            currentLevelSize = 0;
+            
+            //update bestMove and depth
+            newMove = findBestMove();
+            System.out.println("Best Move: " + newMove + " Evaluation: " + root.nodeValue + " Depth: " + depth + " Level size: " + currentLevelSize);
+            
+            if (root.nodeValue == - 1){break;} //if the algorithm thinks the position is lost it won't bother finding a solution, so return the previous bestMove
+            bestMove = newMove;
+            depth++;
+            
+            //if there are no more positions to generate we have reached max depth and are done
+            if (currentLevelSize == 0){break;}
+        }
+        return root.children.get(bestMove);
+    }
+}
 
-public class Connect4ai {
+class Connect4ai {
     public static void main(String[] args) {
+        Position.playerColour = 0;
         int[][] startPosArray = {{2,2,2,2,2,2,2}, 
                                  {2,2,2,2,2,2,2},
                                  {2,2,2,2,2,2,2},
@@ -179,19 +325,24 @@ public class Connect4ai {
                                  {2,2,2,2,2,2,2}};
               
         int[][] samplePosArray = {{1,2,2,2,2,2,2},
-                                  {0,2,2,2,2,2,2},
+                                  {0,1,2,2,2,2,0},
                                   {1,1,2,2,2,1,1},
                                   {0,0,1,2,1,0,1},
                                   {0,1,1,0,0,1,0},
                                   {0,1,0,0,0,1,1}};
-                
-        Position startPos = new Position(startPosArray);
-        Position samplePos = new Position(samplePosArray);
         
-        samplePos.displayPosition();
-        System.out.println(Analysis.analysePosition(samplePos));
-        for (int i = 0; i < 10000000; i++){
-            Analysis.analysePosition(samplePos);
-        }
-    }  
+        int[][] testPosArray = {{2,2,2,2,2,2,2}, 
+                                {2,2,2,2,2,2,2},
+                                {2,2,2,2,2,2,2},
+                                {2,2,2,2,2,2,2},
+                                {2,2,2,2,2,2,2},
+                                {2,2,2,2,2,2,2}};
+                
+        Position startPos = new Position(startPosArray, 2);
+        Position samplePos = new Position(samplePosArray, 2);
+        Position testPos = new Position(testPosArray, 2);
+        gameTree tree = new gameTree(testPos);
+        
+        tree.decideMove().displayPosition();
+    }
 }
