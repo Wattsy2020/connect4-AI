@@ -288,20 +288,24 @@ class gameTree{
     //iterative deepening algorithm that uses findBestMove
     public Position decideMove(){
         int bestMove = 0;
+        int newMove;
         depth = 1;
         int prevLevelSize = 1;
         currentLevelSize = 1;
         
         //keep searching until the next level would have a larger size than the levelLimit
-        while (currentLevelSize*(currentLevelSize/prevLevelSize) < levelLimit){
+        while (currentLevelSize*((double)currentLevelSize/prevLevelSize) < levelLimit){
             //update level sizes
             prevLevelSize = currentLevelSize;
             currentLevelSize = 0;
             
             //update bestMove and depth
-            bestMove = findBestMove();
+            newMove = findBestMove();
+            System.out.println("Best Move: " + newMove + " Evaluation: " + root.nodeValue + " Depth: " + depth + " Level size: " + currentLevelSize);
+            
+            if (root.nodeValue == - 1){break;} //if the algorithm thinks the position is lost it won't bother finding a solution, so return the previous bestMove
+            bestMove = newMove;
             depth++;
-            System.out.println("Depth: " + depth);
             
             //if there are no more positions to generate we have reached max depth and are done
             if (currentLevelSize == 0){break;}
@@ -318,7 +322,7 @@ class Connect4ai {
                                  {2,2,2,2,2,2,2},
                                  {2,2,2,2,2,2,2},
                                  {2,2,2,2,2,2,2},
-                                 {2,2,2,0,2,2,2}};
+                                 {2,2,2,2,2,2,2}};
               
         int[][] samplePosArray = {{1,2,2,2,2,2,2},
                                   {0,1,2,2,2,2,0},
@@ -337,7 +341,7 @@ class Connect4ai {
         Position startPos = new Position(startPosArray, 2);
         Position samplePos = new Position(samplePosArray, 2);
         Position testPos = new Position(testPosArray, 2);
-        gameTree tree = new gameTree(samplePos);
+        gameTree tree = new gameTree(testPos);
         
         tree.decideMove().displayPosition();
     }
