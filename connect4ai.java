@@ -88,10 +88,60 @@ class Analysis{
         }
         return connected(diagonal2);
     }
+    
+    //Heuristic to analyse even positions by number of adjacent pieces 
+    public static int leafNodeValue(Position pos, int opponentColour){
+        int callerScore = 0;
+        int opponentScore = 0;
+        int sum;
+        
+        for(int i = 5; i > 0; i--){ //loop through rows from bottom to top
+            //stop searching if the row is empty
+            sum = 0;
+            for (int j = 0; j < 7; j++){
+                sum += pos.board[i][j];
+            }
+            if (sum == 14){return callerScore - opponentScore/2;}
+            
+            for(int k = 0; k < 6; k++){ //search all columns except the last, so that their is always a column to the right
+                //compare to pieces directly above
+                if (pos.board[i][k] == pos.board[i-1][k]){
+                    if (pos.board[i][k] == opponentColour){opponentScore++;}
+                    else if (pos.board[i][k] != 2){callerScore++;}
+                }
+                
+                //compare to pieces diagonally above and to the right
+                if (pos.board[i][k] == pos.board[i-1][k+1]){
+                    if (pos.board[i][k] == opponentColour){opponentScore++;}
+                    else if (pos.board[i][k] != 2){callerScore++;}
+                }
+                
+                //compare to pieces diagonally above and to the left
+                if (pos.board[i][k+1] == pos.board[i-1][k]){
+                    if (pos.board[i][k+1] == opponentColour){opponentScore++;}
+                    else if (pos.board[i][k+1] != 2){callerScore++;}
+                }
+                
+                //compare to pieces to the right
+                if (pos.board[i][k] == pos.board[i][k+1]){
+                    if (pos.board[i][k] == opponentColour){opponentScore++;}
+                    else if (pos.board[i][k] != 2){callerScore++;}
+                }
+            }
+            
+            //check the last column
+            if (pos.board[i][6] == pos.board[i-1][6]){
+                    if (pos.board[i][6] == opponentColour){opponentScore++;}
+                    else if (pos.board[i][6] != 2){callerScore++;}
+            }
+        }
+        
+        return callerScore - opponentScore/2; //favours gaining adjacent pieces over stopping your opponent
+    }
 }
 
 class Position{
-    //whether the position is won or lost: -1 = loss, 0 = even, 1 = won
+    //whether the position is won or lost: -100 = loss, 0 = even, 100 = won
     public int state;
     //represents the board as a multidimensional array, 0 = red checker 1 = blue checker 2 = empty
     public int[][] board = new int[6][7];
@@ -101,7 +151,7 @@ class Position{
     public ArrayList<Position> children = new ArrayList<>();
     public int minChildColumn = 0; //the smallest column a checker could be placed in to create a new child
     private int numChildrenStore = -1; //storage for the number of children, only calculated through numChildren() method
-    //useful for minimax algorithm, between -1 and 1
+    //useful for minimax algorithm, between -100 and 100
     public int nodeValue;
     //level of the position, needed for iterative deepening
     public int level;
@@ -113,8 +163,8 @@ class Position{
             System.arraycopy(array[i], 0, board[i], 0, array[i].length);
         }
         if (result == 2){state = 0;}
-        else if (result == playerColour){state = -1;}
-        else{state = 1;}
+        else if (result == playerColour){state = -100;}
+        else{state = 100;}
         level = 0;
     }
     
@@ -129,8 +179,8 @@ class Position{
         
         int result = Analysis.analysePosition(board, move);
         if (result == 2){state = 0;}
-        else if (result == playerColour){state = -1;}
-        else{state = 1;}
+        else if (result == playerColour){state = -100;}
+        else{state = 100;}
     }
     
     public void displayPosition(){
@@ -168,7 +218,7 @@ class gameTree{
     //the root of the gameTree
     public Position root;
     //the largest size a level can be without taking too long to analyse
-    private final int levelLimit = 2000000;
+    private final int levelLimit = 3000000;
     //keeps track of how many levels findBestMove has analysed
     private int currentLevelSize;
     private int depth;
@@ -202,18 +252,13 @@ class gameTree{
         root = startPosition;
     }
     
-    private int leafNodeValue(Position pos){
-        //dummy function, improve later
-        return pos.state;
-    }
-    
     private int maximiserValue(Position pos, int alpha, int beta){
         //stop recursion if it is won or lost
         if (pos.state != 0){return pos.state;}
         //stop recursion if it is a leaf node
-        if (pos.level == depth){return leafNodeValue(pos);}
+        if (pos.level == depth){return Analysis.leafNodeValue(pos, updateColour(Position.playerColour));}
         
-        pos.nodeValue = - 1; //initialise nodeValue to worst case scenario
+        pos.nodeValue = -100; //initialise nodeValue to worst case scenario
         int numChildren = pos.numChildren();
         for(int i = 0; i < numChildren; i++){
             //generate child if needed
@@ -238,9 +283,9 @@ class gameTree{
         //stop recursion if it is won or lost
         if (pos.state != 0){return pos.state;}
         //stop recursion if it is a leaf node
-        if (pos.level == depth){return leafNodeValue(pos);}
+        if (pos.level == depth){return Analysis.leafNodeValue(pos, Position.playerColour);}
         
-        pos.nodeValue = 1; //initialise nodeValue to worst case scenario
+        pos.nodeValue = 100; //initialise nodeValue to worst case scenario
         int numChildren = pos.numChildren();
         for(int i = 0; i < numChildren; i++){
             //generate child if needed
@@ -262,7 +307,7 @@ class gameTree{
     }
     
     public int findBestMove(){
-        root.nodeValue = - 1; //initialise nodeValue to worst case scenario
+        root.nodeValue = -100; //initialise nodeValue to worst case scenario
         int bestMove = 0;
         int numChildren = root.numChildren();
         
@@ -273,14 +318,14 @@ class gameTree{
                 addChild(root, updateColour(Position.playerColour));
             }
             
-            int childValue = minimiserValue(root.children.get(i), root.nodeValue, 1);
+            int childValue = minimiserValue(root.children.get(i), root.nodeValue, 100);
             
             //update nodeValue if a better option is found
             if (childValue > root.nodeValue) {
                 root.nodeValue = childValue;
                 bestMove = i;
             }
-            if (root.nodeValue == 1) {break;}
+            if (root.nodeValue == 100) {break;}
         }
         return bestMove;
     }
@@ -290,20 +335,16 @@ class gameTree{
         int bestMove = 0;
         int newMove;
         depth = 1;
-        int prevLevelSize = 1;
-        currentLevelSize = 1;
         
         //keep searching until the next level would have a larger size than the levelLimit
-        while (currentLevelSize*((double)currentLevelSize/prevLevelSize) < levelLimit){
-            //update level sizes
-            prevLevelSize = currentLevelSize;
+        while (currentLevelSize*5 < levelLimit){
             currentLevelSize = 0;
             
             //update bestMove and depth
             newMove = findBestMove();
             System.out.println("Best Move: " + newMove + " Evaluation: " + root.nodeValue + " Depth: " + depth + " Level size: " + currentLevelSize);
             
-            if (root.nodeValue == - 1){break;} //if the algorithm thinks the position is lost it won't bother finding a solution, so return the previous bestMove
+            if (root.nodeValue == -100){break;} //if the algorithm thinks the position is lost it won't bother finding a solution, so return the previous bestMove
             bestMove = newMove;
             depth++;
             
@@ -324,7 +365,7 @@ class Connect4ai {
                                  {2,2,2,2,2,2,2},
                                  {2,2,2,2,2,2,2},
                                  {2,2,2,2,2,2,2},
-                                 {2,2,2,2,2,2,2}};
+                                 {2,2,2,1,2,2,2}};
               
         int[][] samplePosArray = {{1,2,2,2,2,2,2},
                                   {0,1,2,2,2,2,0},
@@ -336,25 +377,35 @@ class Connect4ai {
         int[][] testPosArray = {{2,2,2,2,2,2,2}, 
                                 {2,2,2,2,2,2,2},
                                 {2,2,2,2,2,2,2},
-                                {2,2,2,2,2,2,2},
-                                {2,2,2,2,2,2,2},
-                                {2,2,2,2,2,2,2}};
+                                {2,2,2,0,0,0,2},
+                                {2,2,2,2,0,1,1},
+                                {2,2,2,2,0,1,1}};
                 
         Position startPos = new Position(startPosArray, 2);
         Position samplePos = new Position(samplePosArray, 2);
         Position testPos = new Position(testPosArray, 2);
         
+        String Continue;
+        do{
+            gameLoop(startPos);
+            System.out.printf("Continue playing? [Y/N] ");
+            Continue = sc.next();
+            System.out.println();
+        } while (!"N".equals(Continue));
+        
+    }
+    
+    private static void gameLoop(Position startPos){
         gameTree tree = new gameTree(startPos);
         Position currentPos = startPos;
         
-        //UI loop
         System.out.println("Welcome to connect4! Enter your moves by typing a column number between 0 and 6");
-        System.out.println("If the Systems evaluation is -1 that means you have a forced win, good luck finding it!");
+        System.out.println("The system evaluates positions from -100 to 100 with 100 being best for the computer");
         currentPos.displayPosition();
         while (true){
             currentPos = getPlayerMove(currentPos);
             currentPos.displayPosition();
-            if (currentPos.state == -1){
+            if (currentPos.state == -100){
                 System.out.println("You win!");
                 break;
             }
@@ -362,7 +413,7 @@ class Connect4ai {
             tree.root = currentPos;
             currentPos = tree.decideMove();
             currentPos.displayPosition();
-            if (currentPos.state == 1){
+            if (currentPos.state == 100){
                 System.out.println("You lose");
                 break;
             }
