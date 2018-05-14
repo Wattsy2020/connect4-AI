@@ -335,6 +335,7 @@ class gameTree{
         int bestMove = 0;
         int newMove;
         depth = 1;
+        currentLevelSize = 0;
         
         //keep searching until the next level would have a larger size than the levelLimit
         while (currentLevelSize*5 < levelLimit){
