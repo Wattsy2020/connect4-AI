@@ -346,7 +346,9 @@ class gameTree{
             System.out.println("Best Move: " + newMove + " Evaluation: " + root.nodeValue + " Depth: " + depth + " Level size: " + currentLevelSize);
             
             if (root.nodeValue == -100){break;} //if the algorithm thinks the position is lost it won't bother finding a solution, so return the previous bestMove
+            
             bestMove = newMove;
+            if (root.nodeValue == 100){break;} //return if a win is found
             depth++;
             
             //if there are no more positions to generate we have reached max depth and are done
