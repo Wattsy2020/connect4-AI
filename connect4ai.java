@@ -218,7 +218,7 @@ class gameTree{
     //the root of the gameTree
     public Position root;
     //the largest size a level can be without taking too long to analyse
-    private final int levelLimit = 3000000;
+    private final int levelLimit = 5000000;
     //keeps track of how many levels findBestMove has analysed
     private int currentLevelSize;
     private int depth;
@@ -253,6 +253,8 @@ class gameTree{
     }
     
     private int maximiserValue(Position pos, int alpha, int beta){
+        //stop recursion if the level is too large
+        if(currentLevelSize > levelLimit){return 0;}
         //stop recursion if it is won or lost
         if (pos.state != 0){return pos.state;}
         //stop recursion if it is a leaf node
@@ -280,6 +282,8 @@ class gameTree{
     }
     
     private int minimiserValue(Position pos, int alpha, int beta){
+        //stop recursion if the level is too large
+        if(currentLevelSize > levelLimit){return 0;}
         //stop recursion if it is won or lost
         if (pos.state != 0){return pos.state;}
         //stop recursion if it is a leaf node
@@ -343,10 +347,11 @@ class gameTree{
             
             //update bestMove and depth
             newMove = findBestMove();
-            System.out.println("Best Move: " + newMove + " Evaluation: " + root.nodeValue + " Depth: " + depth + " Level size: " + currentLevelSize);
             
             if (root.nodeValue == -100){break;} //if the algorithm thinks the position is lost it won't bother finding a solution, so return the previous bestMove
+            if(currentLevelSize > levelLimit){break;} //the algorithm won't have found a proper answer if it goes over the level size
             
+            System.out.println("Best Move: " + newMove + " Evaluation: " + root.nodeValue + " Depth: " + depth + " Level size: " + currentLevelSize);
             bestMove = newMove;
             if (root.nodeValue == 100){break;} //return if a win is found
             depth++;
