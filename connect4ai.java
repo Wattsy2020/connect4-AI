@@ -1,6 +1,7 @@
 package connect4ai;
 
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.Scanner;
 
 class Analysis{
@@ -218,10 +219,12 @@ class gameTree{
     //the root of the gameTree
     public Position root;
     //the largest size a level can be without taking too long to analyse
-    private final int levelLimit = 5000000;
+    private final int levelLimit = 3000000;
     //keeps track of how many levels findBestMove has analysed
     private int currentLevelSize;
     private int depth;
+    //generate random moves
+    private Random randGenerator = new Random();
     
     private int updateColour(int colour){
         if (colour == 0){return 1;}
@@ -314,6 +317,7 @@ class gameTree{
         root.nodeValue = -100; //initialise nodeValue to worst case scenario
         int bestMove = 0;
         int numChildren = root.numChildren();
+        int numEven = 0; //count the number of even positions, randomise the move if they are all even
         
         //note alpha = best already explored option along the path to the root for the maximiser and beta is the same for the minimiser
         for(int i = 0; i < numChildren; i++){
@@ -330,7 +334,14 @@ class gameTree{
                 bestMove = i;
             }
             if (root.nodeValue == 100) {break;}
+            if (childValue == 0){ numEven++;}
         }
+        
+        //randomise move if all positions are even
+        if (numEven == numChildren){
+            bestMove = randGenerator.nextInt(numChildren);
+        }
+        
         return bestMove;
     }
     
@@ -348,10 +359,11 @@ class gameTree{
             //update bestMove and depth
             newMove = findBestMove();
             
-            if (root.nodeValue == -100){break;} //if the algorithm thinks the position is lost it won't bother finding a solution, so return the previous bestMove
             if(currentLevelSize > levelLimit){break;} //the algorithm won't have found a proper answer if it goes over the level size
             
             System.out.println("Best Move: " + newMove + " Evaluation: " + root.nodeValue + " Depth: " + depth + " Level size: " + currentLevelSize);
+            if (root.nodeValue == -100){break;} //if the algorithm thinks the position is lost it won't bother finding a solution, so return the previous bestMove
+            
             bestMove = newMove;
             if (root.nodeValue == 100){break;} //return if a win is found
             depth++;
@@ -399,7 +411,7 @@ class Connect4ai {
             System.out.printf("Continue playing? [Y/N] ");
             Continue = sc.next();
             System.out.println();
-        } while (!"N".equals(Continue));
+        } while (!"n".equals(Continue.toLowerCase()));
         
     }
     
